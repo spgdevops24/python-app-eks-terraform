@@ -39,7 +39,7 @@ The configuration uses several input variables, defined in `vars.tf`. Key inputs
 - **backend_key:** (string) The key (path) in the S3 bucket for the Terraform state file.
 - **backend_dynamodb_table:** (string) The DynamoDB table name for Terraform state locking.
 
-> **Note:** In the final version, the `backend.tf` was updated to hardcode the backend configuration, so these variables may no longer apply directly to `backend.tf`. They might still be useful if you’re modifying the setup script to dynamically create these resources.
+> **Note:** Since Terraform don't support use of variables in the backend resource, the `backend.tf` was updated to hardcode the backend configuration, so alway remember to update backend manually per requirement se.
 
 ## Outputs
 After a successful apply, Terraform will output:
@@ -47,8 +47,13 @@ After a successful apply, Terraform will output:
 - **hello_world_app_lb_hostname:** The hostname of the LoadBalancer that fronts the "Hello World" application. Use `http://<hostname>/` in your browser to access the app.
 
 ## Why Use the deploy.sh Script
-The `deploy.sh` script orchestrates the entire deployment and teardown process. It:
+The `deploy.sh` script orchestrates the entire deployment and teardown process. 
+NOTE: This depoloy.sh file uses following variables as hard-coded, so it is a good practice to review these variables as per your requirements.
+    - BUCKET_NAME="python-helloworld-app-bucket"    ### CHANGE PER YOUR NEED
+    - DYNAMODB_TABLE="python-helloworld-app"        ### CHANGE PER YOUR NEED
+    - REGION="us-east-1"                            ### CHANGE PER YOUR NEED
 
+It:
 - Ensures prerequisites like the DynamoDB table and S3 bucket for remote state are created before initializing Terraform.
 - Runs `terraform init` and then `terraform apply` without `-auto-approve`, so you have a chance to review the plan and type `yes` to proceed.
 - After successful deployment, it attempts to validate that the application is accessible by querying the LoadBalancer’s endpoint.
