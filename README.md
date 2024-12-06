@@ -1,16 +1,30 @@
 # Satesh-Application Deployment with Terraform and EKS
+# Challenge Objectives:
+        Create a Terraform, Kubernetes, and a Hello World Python app.
 
-## What it Does
+    Deliverables:
+        Terraform Configurations for:
+            - AWS Provider setup.
+            - EKS.
+            - S3 bucket creation.
+            - Kubernetes Deployment & Service YAML Files for:
+            - Python app deployment (with http.server).
+            - Exposing the app via a service (LoadBalancer).
+            - Terraform Code to Integrate Kubernetes:
+            - Use Terraform to deploy the Python app and service to the Kubernetes cluster (EKS ).
+            - Verification of the deployed Python app being accessible through the service.
+
+## What this code repo "Does"?
 This repository provides a Terraform configuration that:
 
-1. Creates a VPC with public subnets.
-2. Deploys an Amazon EKS cluster and associated node groups.
-3. Builds and containerizes a simple Python "Hello World" application using Docker.
-4. Pushes the resulting image to Amazon ECR.
-5. Deploys the application onto the EKS cluster in the `hello-world-app` Kubernetes namespace.
-6. Exposes the application via a LoadBalancer service so it can be accessed publicly over HTTP.
+    1. Creates a VPC with public subnets.
+    2. Deploys an Amazon EKS cluster and associated node groups.
+    3. Builds and containerizes a simple Python "Hello World" application using Docker.
+    4. Pushes the resulting image to Amazon ECR.
+    5. Deploys the application onto the EKS cluster in the `hello-world-app` Kubernetes namespace.
+    6. Exposes the application via a LoadBalancer service so it can be accessed publicly over HTTP.
 
-By following the provided setup and running the scripts, you can get a working "Hello World" application accessible through a public endpoint.
+    By following the provided setup and running the scripts, you can get a working "Hello World" application accessible through a public endpoint.
 
 ## Terraform Flow of Deployment
 The deployment follows a clear order, enforced by Terraform dependencies:
