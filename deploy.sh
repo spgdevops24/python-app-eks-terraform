@@ -11,7 +11,7 @@ fi
 # Variables for resources created outside of Terraform
 BUCKET_NAME="python-helloworld-app-bucket"
 DYNAMODB_TABLE="python-helloworld-app"
-REGION="us-east-1"
+REGION="eu-west-1"
 
 if [[ "$ACTION" == "apply" ]]; then
     # Create DynamoDB table for TF state locking if it doesn't exist
@@ -48,12 +48,7 @@ if [[ "$ACTION" == "apply" ]]; then
 
     # After apply, get the service load balancer endpoint
     LB_HOSTNAME=$(terraform output -raw hello_world_app_lb_hostname 2>/dev/null || true)
-    if [ -z "$LB_HOSTNAME" ]; then
-        # Attempt to retrieve from kubernetes service if terraform output not defined
-        echo "Fetching LoadBalancer hostname..."
-        LB_HOSTNAME=$(kubectl get svc -n hello-world-app satesh-app -o jsonpath='{.status.loadBalancer.ingress[0].hostname}') || true
-    fi
-
+    
     if [ -z "$LB_HOSTNAME" ]; then
         echo "Cannot fetch LoadBalancer hostname. Please wait a moment and try again."
         exit 1
@@ -83,7 +78,7 @@ elif [[ "$ACTION" == "destroy" ]]; then
     # Create arrays for each category
     k8s_services=()
     k8s_deployments=()
-    k8s_namespaces=()
+    #k8s_namespaces=()
     eks_node_groups=()
     eks_clusters=()
 
@@ -124,7 +119,16 @@ elif [[ "$ACTION" == "destroy" ]]; then
         echo "Destroying: $r"
         terraform destroy -target="$r" -auto-approve || true
     done
-    terraform destroy -auto-approve || true
+    set +e
+    terraform destroy -auto-approve
+    DESTROY_EXIT=$?
+    set -e
+
+    if [ $DESTROY_EXIT -ne 0 ]; then
+        echo "Terraform destroy failed. Not removing S3 bucket and DynamoDB table."
+        echo "Please resolve the issues and re-run destroy or remove resources manually."
+        exit 1
+    fi
 
     # Delete S3 bucket
     if aws s3api head-bucket --bucket "$BUCKET_NAME" 2>/dev/null; then
@@ -147,9 +151,11 @@ elif [[ "$ACTION" == "destroy" ]]; then
     else
         echo "DynamoDB table $DYNAMODB_TABLE not found or already deleted."
     fi
-    echo "Destroy process completed."
 
-    echo "NOTE: To avoid unnecessary cost Billings from the AWS Cloud, Check Terraform logs for any undestroyed resources."
-    echo "Below is the statefile list: (If-Not-Empty 'These may need to be destroyed manually')."
-    terraform state list
+    # Check if state still exists
+    if terraform state list >/dev/null 2>&1; then
+        echo "Terraform state still exists. Please destroy these resources manually."
+    else
+        echo "No Terraform state found. Destroy process completed successfully."
+    fi
 fi

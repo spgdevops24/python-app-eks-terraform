@@ -1,9 +1,16 @@
-locals {
-  app_name  = "satesh-app"
-  eks_name  = "Satesh-eks"
-  namespace = "hello-world-app"
+provider "aws" {
+  region = var.region
 }
 
-output "hello_world_app_lb_hostname" {
-  value = kubernetes_service.hello_world_app_svc.status[0].load_balancer[0].ingress[0].hostname
+terraform {
+  required_providers {
+    docker = {
+      source  = "kreuzwerker/docker"
+      version = "~> 3.0"
+    }
+  }
+}
+
+locals {
+  app_name  = var.app_name
 }

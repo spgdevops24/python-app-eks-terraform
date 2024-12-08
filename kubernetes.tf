@@ -1,19 +1,18 @@
-resource "kubernetes_namespace" "hello_world_app_ns" {
-  metadata {
-    name = local.namespace
-  }
-  depends_on = [
-    aws_eks_cluster.eks,
-    aws_eks_node_group.node_group
-  ]
+provider "kubernetes" {
+  host                   = aws_eks_cluster.eks_cluster.endpoint
+  cluster_ca_certificate = base64decode(aws_eks_cluster.eks_cluster.certificate_authority.0.data)
+  token                  = data.aws_eks_cluster_auth.eks_auth.token
 }
 
-resource "kubernetes_deployment" "hello_world_app" {
+data "aws_eks_cluster_auth" "eks_auth" {
+  name = aws_eks_cluster.eks_cluster.name
+}
+
+resource "kubernetes_deployment" "hello_world_app_deployment" {
   metadata {
-    name      = local.app_name
-    namespace = kubernetes_namespace.hello_world_app_ns.metadata[0].name
+    name      = "${local.app_name}-deployment"
     labels = {
-      app = local.app_name
+      app = "${local.app_name}"
     }
   }
 
@@ -21,50 +20,49 @@ resource "kubernetes_deployment" "hello_world_app" {
     replicas = 2
     selector {
       match_labels = {
-        app = local.app_name
+        app = "${local.app_name}"
       }
     }
     template {
-      metadata {
-        labels = {
-          app = local.app_name
+        metadata {
+            name = "${local.app_name}"
+            labels = {
+                app = "${local.app_name}"
+            }
         }
-      }
-      spec {
-        container {
-          name  = local.app_name
-          image = docker_registry_image.satesh_app_push.name
-          port {
-            container_port = 8080
-          }
+        spec {
+            container {
+                name  = "${local.app_name}-container"
+                image = "${aws_ecr_repository.hello_world_app_repo.repository_url}:latest"
+
+                resources {
+                    limits = {
+                        cpu    = "0.5"
+                        memory = "512Mi"
+                    }
+                    requests = {
+                        cpu    = "0.25"
+                        memory = "256Mi"
+                    }
+                }
+            }
         }
-      }
     }
   }
-
-  depends_on = [kubernetes_namespace.hello_world_app_ns]
 }
 
 resource "kubernetes_service" "hello_world_app_svc" {
   metadata {
-    name      = local.app_name
-    namespace = kubernetes_namespace.hello_world_app_ns.metadata[0].name
-    labels = {
-      app = local.app_name
-    }
+    name      = "${local.app_name}-svc"
   }
   spec {
     selector = {
-      app = local.app_name
+      app = "${local.app_name}"
     }
-
     port {
       port        = 80
-      target_port = 8080
+      target_port = 80
     }
-
     type = "LoadBalancer"
   }
-
-  depends_on = [kubernetes_deployment.hello_world_app]
 }
